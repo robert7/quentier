@@ -138,6 +138,7 @@ protected Q_SLOTS:
      * or one given note (passed in data).
      */
     void onToggleThumbnailPreference();
+    void onClearDirtyFlag();
 
     void onExportSingleNoteToEnexAction();
     void onExportSeveralNotesToEnexAction();

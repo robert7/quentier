@@ -175,6 +175,14 @@ public:
      */
     bool notebookContainsSyncronizedNotes(const QString & notebookLocalUid) const;
 
+    /**
+     * @brief deleteNote - attempts clear dirty flag
+     *
+     * @param noteLocalUid - the local uid
+     */
+    bool clearDirty(const QString & noteLocalUid);
+
+
 public:
     // QAbstractItemModel interface
     virtual Qt::ItemFlags flags(const QModelIndex & index) const Q_DECL_OVERRIDE;

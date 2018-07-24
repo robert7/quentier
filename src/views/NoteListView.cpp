@@ -877,6 +877,9 @@ void NoteListView::showSingleNoteContextMenu(const QPoint & pos, const QPoint & 
         ADD_CONTEXT_MENU_ACTION( showHideForCurrent, pThumbnailsSubMenu, onToggleThumbnailPreference, noteLocalUid, true);
     }
 
+    ADD_CONTEXT_MENU_ACTION(tr("**Clear dirty flag"), m_pNoteItemContextMenu, onClearDirtyFlag,
+                            noteLocalUid, true);
+
     m_pNoteItemContextMenu->show();
     m_pNoteItemContextMenu->exec(globalPos);
 }
@@ -983,6 +986,31 @@ const NotebookItem * NoteListView::currentNotebookItem()
             << (pNotebookItem ? pNotebookItem->toString() : QStringLiteral("<null>")));
 
     return pNotebookItem;
+}
+
+void NoteListView::onClearDirtyFlag()
+{
+    QNDEBUG(QStringLiteral("NoteListView::onClearDirtyFlag"));
+
+    QAction * pAction = qobject_cast<QAction*>(sender());
+    if (Q_UNLIKELY(!pAction)) {
+        REPORT_ERROR(QT_TR_NOOP("Can't get action"));
+        return;
+    }
+
+    NoteFilterModel * pNoteFilterModel = qobject_cast<NoteFilterModel*>(model());
+    if (Q_UNLIKELY(!pNoteFilterModel)) {
+        REPORT_ERROR(QT_TR_NOOP("Can't get model"));
+        return;
+    }
+
+    NoteModel * pNoteModel = qobject_cast<NoteModel*>(pNoteFilterModel->sourceModel());
+    if (Q_UNLIKELY(!pNoteModel)) {
+        REPORT_ERROR(QT_TR_NOOP("Get note model"));
+        return;
+    }
+    const QString & localUid = pAction->data().toString();
+    pNoteModel->clearDirty(localUid);
 }
 
 } // namespace quentier

@@ -609,6 +609,10 @@ bool NoteModel::setData(const QModelIndex & modelIndex, const QVariant & value, 
             item.setModificationTimestamp(timestamp);
             break;
         }
+    case Columns::Dirty:
+        dirty = value.toBool();
+        break;
+
     default:
         return false;
     }
@@ -2414,5 +2418,14 @@ bool NoteModel::NoteComparator::operator()(const NoteModelItem & lhs, const Note
         return greater;
     }
 }
+
+bool NoteModel::clearDirty(const QString & noteLocalUid)
+{
+    const QModelIndex & modelIndex = indexForLocalUid(noteLocalUid);
+    const QModelIndex & modelIndexD = createIndex(modelIndex.row(), Columns::Dirty);
+    setData(modelIndexD, false, Qt::EditRole);
+    return true;
+}
+
 
 } // namespace quentier
