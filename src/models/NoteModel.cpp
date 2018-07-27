@@ -100,7 +100,8 @@ NoteModel::NoteModel(const Account & account, LocalStorageManagerAsync & localSt
     m_tagDataByTagLocalUid(),
     m_findTagRequestForTagLocalUid(),
     m_tagLocalUidToNoteLocalUid(),
-    m_allNotesListed(false)
+    m_allNotesListed(false),
+    m_startupTimestamp(QDateTime::currentMSecsSinceEpoch())
 {
     createConnections(localStorageManagerAsync);
     requestNotesList();
@@ -988,11 +989,14 @@ void NoteModel::onListNotesComplete(LocalStorageManager::ListObjectsOptions flag
         return;
     }
 
-    NMTRACE(QStringLiteral("NoteModel::onListNotesComplete: flag = ") << flag << QStringLiteral(", with resource binary data = ")
+    NMINFO(QStringLiteral("NoteModel::onListNotesComplete: flag = ") << flag << QStringLiteral(", with resource binary data = ")
             << (withResourceBinaryData ? QStringLiteral("true") : QStringLiteral("false")) << QStringLiteral(", limit = ") << limit
             << QStringLiteral(", offset = ") << offset << QStringLiteral(", order = ") << order << QStringLiteral(", direction = ")
             << orderDirection << QStringLiteral(", linked notebook guid = ") << linkedNotebookGuid << QStringLiteral(", num found notes = ")
-            << foundNotes.size() << QStringLiteral(", request id = ") << requestId);
+            << foundNotes.size() << QStringLiteral(", request id = ") << requestId
+            << QStringLiteral(", since start = ") << (QDateTime::currentMSecsSinceEpoch() - m_startupTimestamp)
+            << QStringLiteral(" ms")
+    );
 
     for(auto it = foundNotes.begin(), end = foundNotes.end(); it != end; ++it) {
         ++m_numberOfNotesPerAccount;
@@ -1020,7 +1024,7 @@ void NoteModel::onListNotesFailed(LocalStorageManager::ListObjectsOptions flag, 
         return;
     }
 
-    NMTRACE(QStringLiteral("NoteModel::onListNotesFailed: flag = ") << flag << QStringLiteral(", with resource binary data = ")
+    NMWARNING(QStringLiteral("NoteModel::onListNotesFailed: flag = ") << flag << QStringLiteral(", with resource binary data = ")
             << (withResourceBinaryData ? QStringLiteral("true") : QStringLiteral("false")) << QStringLiteral(", limit = ")
             << limit << QStringLiteral(", offset = ") << offset << QStringLiteral(", order = ") << order << QStringLiteral(", direction = ")
             << orderDirection << QStringLiteral(", linked notebook guid = ") << linkedNotebookGuid
@@ -1294,7 +1298,7 @@ void NoteModel::createConnections(LocalStorageManagerAsync & localStorageManager
 
 void NoteModel::requestNotesList()
 {
-    NMTRACE(QStringLiteral("NoteModel::requestNotesList: offset = ") << m_listNotesOffset);
+    NMINFO(QStringLiteral("NoteModel::requestNotesList: offset = ") << m_listNotesOffset);
 
     LocalStorageManager::ListObjectsOptions flags = LocalStorageManager::ListAll;
     LocalStorageManager::ListNotesOrder::type order = LocalStorageManager::ListNotesOrder::NoOrder;
@@ -1332,9 +1336,9 @@ void NoteModel::requestNotesList()
     }
 
     m_listNotesRequestId = QUuid::createUuid();
-    NMTRACE(QStringLiteral("Emitting the request to list notes: offset = ") << m_listNotesOffset
-            << QStringLiteral(", request id = ") << m_listNotesRequestId << QStringLiteral(", order = ")
-            << order << QStringLiteral(", direction = ") << direction);
+    NMINFO(QStringLiteral("Emitting the request to list notes: offset = ") << m_listNotesOffset
+           << QStringLiteral(", request id = ") << m_listNotesRequestId << QStringLiteral(", order = ")
+           << order << QStringLiteral(", direction = ") << direction);
     Q_EMIT listNotes(flags, /* with resource binary data = */ false, NOTE_LIST_LIMIT, m_listNotesOffset, order, direction, QString(), m_listNotesRequestId);
 }
 
@@ -2201,7 +2205,8 @@ void NoteModel::checkAndNotifyAllNotesListed()
         return;
     }
 
-    NMDEBUG(QStringLiteral("All the necessary data items were listed"));
+    NMINFO(QStringLiteral("All the necessary data items were listed; total time = ")
+           << (QDateTime::currentMSecsSinceEpoch() - m_startupTimestamp) << QStringLiteral(" ms"));
     m_allNotesListed = true;
     Q_EMIT notifyAllNotesListed();
 }

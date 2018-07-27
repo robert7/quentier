@@ -393,7 +393,8 @@ private:
     LocalUidToRequestIdBimap            m_findTagRequestForTagLocalUid;
     QMultiHash<QString, QString>        m_tagLocalUidToNoteLocalUid;
 
-    bool                    m_allNotesListed;
+    bool                                m_allNotesListed;
+    qint64                              m_startupTimestamp;
 };
 
 } // namespace quentier
