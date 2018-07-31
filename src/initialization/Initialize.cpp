@@ -34,6 +34,8 @@
 #include "breakpad/BreakpadIntegration.h"
 #endif
 
+#include <QFileInfo>
+
 namespace quentier {
 
 void parseCommandLine(int argc, char *argv[], ParseCommandLineResult & result)
@@ -51,8 +53,14 @@ void parseCommandLine(int argc, char *argv[], ParseCommandLineResult & result)
     }
 }
 
-int initialize(QuentierApplication & app, const CommandLineParser::CommandLineOptions & cmdOptions)
+bool initialize(QuentierApplication & app, const CommandLineParser::CommandLineOptions & cmdOptions)
 {
+    // NOTE: need to check for "storageDir" command line option first, before doing any other part of initialization routine
+    // because this option affects the path to Quentier's persistent storage folder
+    if (!processStorageDirCommandLineOption(cmdOptions)) {
+        return false;
+    }
+
     // Initialize logging
     QUENTIER_INITIALIZE_LOGGING();
     QUENTIER_SET_MIN_LOG_LEVEL(Info);
@@ -83,16 +91,53 @@ int initialize(QuentierApplication & app, const CommandLineParser::CommandLineOp
     return processCommandLineOptions(cmdOptions);
 }
 
-int processCommandLineOptions(const CommandLineParser::CommandLineOptions & cmdOptions)
-{
-    typedef CommandLineParser::CommandLineOptions CmdOptions;
+typedef CommandLineParser::CommandLineOptions CmdOptions;
 
+bool processStorageDirCommandLineOption(const CommandLineParser::CommandLineOptions & cmdOptions)
+{
     CmdOptions::const_iterator storageDirIt = cmdOptions.find(QStringLiteral("storageDir"));
-    if (storageDirIt != cmdOptions.constEnd()) {
-        QString storageDir = storageDirIt.value().toString();
-        qputenv(LIBQUENTIER_PERSISTENCE_STORAGE_PATH, storageDir.toLocal8Bit());
+    if (storageDirIt == cmdOptions.constEnd()) {
+        return true;
     }
 
+    QString storageDir = storageDirIt.value().toString();
+    QFileInfo storageDirInfo(storageDir);
+    if (!storageDirInfo.exists())
+    {
+        QDir dir(storageDir);
+        if (!dir.mkpath(storageDir)) {
+            criticalMessageBox(Q_NULLPTR, QObject::tr("Quentier cannot start"),
+                               QObject::tr("Cannot create directory for persistent storage pointed to by \"storageDir\" command line option"),
+                               QDir::toNativeSeparators(storageDir));
+            return false;
+        }
+    }
+    else if (Q_UNLIKELY(!storageDirInfo.isDir())) {
+        criticalMessageBox(Q_NULLPTR, QObject::tr("Quentier cannot start"),
+                           QObject::tr("\"storageDir\" command line option doesn't point to a directory"),
+                           QDir::toNativeSeparators(storageDir));
+        return false;
+    }
+    else if (Q_UNLIKELY(!storageDirInfo.isReadable())) {
+        criticalMessageBox(Q_NULLPTR, QObject::tr("Quentier cannot start"),
+                           QObject::tr("The directory for persistent storage pointed to by \"storageDir\" command line option is not readable"),
+                           QDir::toNativeSeparators(storageDir));
+        return false;
+    }
+    else if (Q_UNLIKELY(!storageDirInfo.isWritable())) {
+        criticalMessageBox(Q_NULLPTR, QObject::tr("Quentier cannot start"),
+                           QObject::tr("The directory for persistent storage pointed to by \"storageDir\" command line option is not writable"),
+                           QDir::toNativeSeparators(storageDir));
+        return false;
+    }
+
+    qputenv(LIBQUENTIER_PERSISTENCE_STORAGE_PATH, storageDir.toLocal8Bit());
+    return true;
+}
+
+
+bool processCommandLineOptions(const CommandLineParser::CommandLineOptions & cmdOptions)
+{
     CmdOptions::const_iterator accountIt = cmdOptions.find(QStringLiteral("account"));
     if (accountIt != cmdOptions.constEnd())
     {
@@ -109,7 +154,7 @@ int processCommandLineOptions(const CommandLineParser::CommandLineOptions & cmdO
             criticalMessageBox(Q_NULLPTR, QObject::tr("Quentier cannot start"),
                                QObject::tr("Unable to parse the startup account"),
                                errorDescription.localizedString());
-            return 1;
+            return false;
         }
 
         bool foundAccount = false;
@@ -148,7 +193,7 @@ int processCommandLineOptions(const CommandLineParser::CommandLineOptions & cmdO
                                QObject::tr("Wrong startup account"),
                                QObject::tr("The startup account specified on the command line does not correspond "
                                            "to any already existing account"));
-            return 1;
+            return false;
         }
 
         qputenv(ACCOUNT_NAME_ENV_VAR, accountName.toLocal8Bit());
@@ -167,7 +212,7 @@ int processCommandLineOptions(const CommandLineParser::CommandLineOptions & cmdO
                 (overrideSystemTrayAvailability ? QByteArray("1") : QByteArray("0")));
     }
 
-    return 0;
+    return true;
 }
 
 } // namespace quentier

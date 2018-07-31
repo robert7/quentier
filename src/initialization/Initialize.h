@@ -41,11 +41,37 @@ public:
     CommandLineParser::CommandLineOptions   m_cmdOptions;
 };
 
+
 void parseCommandLine(int argc, char *argv[], ParseCommandLineResult & result);
 
-int initialize(QuentierApplication & app, const CommandLineParser::CommandLineOptions & cmdOptions);
+/**
+ * Processes "storageDir" command line option. This command line option is special because
+ * if it is present, it changes the base path where app stores nearly all of its persistent data.
+ * Therefore this command line option needs to be processed separately from others very early
+ * during the app initialization routine.
+ *
+ * @param options           Command line arguments being searched for "storageDir"
+ * @return true if no error was detected during the processing of "storageDir" command line argument, false otherwise
+ */
+bool processStorageDirCommandLineOption(const CommandLineParser::CommandLineOptions & options);
 
-int processCommandLineOptions(const CommandLineParser::CommandLineOptions & options);
+/**
+ * Processes command line options other than "storageDir".
+ *
+ * @param options           Command line arguments being parsed
+ * @return true if no error was detected during the processing of command line arguments, false otherwise
+ */
+bool processCommandLineOptions(const CommandLineParser::CommandLineOptions & options);
+
+/**
+ * Initializes various things Quentier requires before actually launching the app, including
+ * parsing of command line arguments
+ *
+ * @param app               Quentier app instance
+ * @param cmdOptions        Command line arguments to be parsed
+ * @return true if no error was detected during the initialization, false otherwise
+ */
+bool initialize(QuentierApplication & app, const CommandLineParser::CommandLineOptions & cmdOptions);
 
 } // namespace quentier
 

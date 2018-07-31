@@ -160,6 +160,40 @@ protected:
                                    const NoteFilterModel & noteFilterModel, const NoteModel & noteModel);
     void showMultipleNotesContextMenu(const QPoint & globalPos, const QStringList & noteLocalUids);
 
+private:
+    /**
+     * Attempts to cast the given model to note filter model.
+     */
+    NoteFilterModel * noteFilterModel(QAbstractItemModel * model) const;
+
+    /**
+     * Return current model as note filter model.
+     */
+    NoteFilterModel * noteFilterModel() const;
+
+    /**
+     * Attempts to cast the source model of given note filter model to note model.
+     */
+    NoteModel * noteModel(NoteFilterModel * pNoteFilterModel) const;
+
+    /**
+     * Convenience method called in slots invoked by QAction's signals.
+     * @return variant data from QAction sender's data (invalid variant in case of error).
+     */
+    QVariant actionData();
+
+    /**
+     * Convenience method called in slots invoked by QAction's signals.
+     * @return string data from QAction sender's data (empty string in case of error).
+     */
+    QString actionDataString();
+
+    /**
+     * Convenience method called in slots invoked by QAction's signals.
+     * @return string list data from QAction sender's data (empty list in case of error).
+     */
+    QStringList actionDataStringList();
+
 protected:
     QMenu *             m_pNoteItemContextMenu;
     NotebookItemView *  m_pNotebookItemView;
@@ -173,6 +207,7 @@ protected:
      * Current value of "shown thumbnails for all notes".
      */
     bool                m_showThumbnailsForAllNotes;
+
     /**
      * Set with local uids of notes where thumbnail was manually hidden.
      */
